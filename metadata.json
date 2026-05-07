@@ -1,0 +1,5 @@
+{
+  "name": "Quản lý hệ thống cơ sở hạ tầng",
+  "description": "Hệ thống quản lý cơ sở hạ tầng học tập với tích hợp mô hình 3D",
+  "requestFramePermissions": ["camera"]
+}

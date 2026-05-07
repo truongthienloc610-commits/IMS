@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=/app/data/database.sqlite
+    restart: always
+
+# Giải thích:
+# - build: . -> Build image từ Dockerfile hiện tại.
+# - volumes: ./data:/app/data -> Ánh xạ thư mục /data trên máy thật vào /app/data trong container.
+#   Điều này giúp file database.sqlite không bị mất khi container bị xóa.

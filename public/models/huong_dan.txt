@@ -1,0 +1,3 @@
+Bỏ file .gltf của bạn vào đây.
+Ví dụ: đặt tên là truong.gltf
+Thì trong code bạn sẽ dùng đường dẫn: /models/truong.gltf
