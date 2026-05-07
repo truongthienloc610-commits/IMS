@@ -1,16 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  BookOpen, 
-  FileText, 
   Users, 
   UserCheck, 
   ClipboardList, 
-  BarChart, 
-  Settings,
-  Box,
   LogOut, 
-  Menu 
+  Menu,
+  Map,
+  Box,
+  Smartphone,
+  Layers,
+  Wrench
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { Button } from './ui/button';
@@ -29,14 +29,14 @@ export default function Layout({ children, user, onLogout }: { children: React.R
 
   const navItems: NavItem[] = [
     { path: '/dashboard', label: 'Tổng quan', icon: LayoutDashboard, roles: ['admin', 'staff'] },
-    { path: '/courses', label: 'Quản lý khóa học', icon: BookOpen, roles: ['admin', 'staff'] },
-    { path: '/lessons', label: 'Quản lý bài học', icon: FileText, roles: ['admin', 'staff'] },
-    { path: '/students', label: 'Quản lý học viên', icon: Users, roles: ['admin', 'staff'] },
-    { path: '/instructors', label: 'Quản lý giảng viên', icon: UserCheck, roles: ['admin', 'staff'] },
-    { path: '/campus-3d', label: 'Mô hình trường 3D', icon: Box, roles: ['admin', 'staff'] },
-    { path: '/exams', label: 'Kỳ thi & Bài tập', icon: ClipboardList, roles: ['admin', 'staff'] },
-    { path: '/reports', label: 'Báo cáo & Thống kê', icon: BarChart, roles: ['admin', 'staff'] },
-    { path: '/settings', label: 'Cài đặt hệ thống', icon: Settings, roles: ['admin'] },
+    { path: '/courses', label: 'Danh sách thiết bị', icon: Box, roles: ['admin', 'staff'] },
+    { path: '/lessons', label: 'Mượn/Trả thiết bị', icon: ClipboardList, roles: ['admin', 'staff'] },
+    { path: '/students', label: 'Quét mã QR', icon: Smartphone, roles: ['admin', 'staff'] },
+    { path: '/map', label: 'Sơ đồ tòa nhà', icon: Map, roles: ['admin', 'staff'] },
+    { path: '/campus-3d', label: 'Mô hình Campus', icon: Layers, roles: ['admin', 'staff'] },
+    { path: '/exams', label: 'Lịch sử sử dụng', icon: ClipboardList, roles: ['admin', 'staff'] },
+    { path: '/reports', label: 'Bảo trì & Sửa chữa', icon: Wrench, roles: ['admin', 'staff'] },
+    { path: '/settings', label: 'Quản lý người dùng', icon: Users, roles: ['admin'] },
   ];
 
   const filteredNavItems = navItems.filter(item => {

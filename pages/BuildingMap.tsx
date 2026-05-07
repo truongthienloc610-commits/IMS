@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
@@ -19,11 +20,19 @@ interface Asset {
 }
 
 export default function BuildingMap() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchRoom, setSearchRoom] = useState('');
-  const [selectedFloor, setSelectedFloor] = useState('1');
+  
+  // Single source of truth for floor: URL search param
+  const selectedFloor = searchParams.get('floor') || '1';
+  
   const [detailRoom, setDetailRoom] = useState<string | null>(null);
+
+  const handleFloorChange = (floor: string) => {
+    setSearchParams({ floor });
+  };
 
   useEffect(() => {
     fetchAssets();
@@ -51,111 +60,225 @@ export default function BuildingMap() {
     return getAssetsInRoom(roomCode).some(a => a.status === 'in-use');
   };
 
-  // If search matches a room, we might want to highlight it or switch floor
+  // If search matches a room, we switch to that floor in the URL
   useEffect(() => {
     if (searchRoom.length >= 2) {
       const match = searchRoom.match(/P(\d+)/i);
       if (match) {
         const roomNum = parseInt(match[1]);
         const floor = Math.floor(roomNum / 100);
-        if (floor >= 1 && floor <= 13) {
-          setSelectedFloor(floor.toString());
+        if (floor >= 1 && floor <= 13 && floor.toString() !== selectedFloor) {
+          handleFloorChange(floor.toString());
         }
       }
     }
-  }, [searchRoom]);
+  }, [searchRoom, selectedFloor]);
 
-  const renderFloor = (floor: number) => (
-    <Card key={floor} className="overflow-hidden border-primary/10 shadow-sm">
-      <CardHeader className="bg-slate-50 border-b py-3">
-        <CardTitle className="text-lg flex items-center">
-          <MapIcon className="mr-2 h-5 w-5 text-primary" />
-          Tầng {floor}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-4">
-          {Array.from({ length: roomsPerFloor }).map((_, i) => {
-            const roomNum = floor * 100 + (i + 1);
-            const roomCode = `P${roomNum}`;
-            const roomAssets = getAssetsInRoom(roomCode);
-            const occupied = isRoomOccupied(roomCode);
-            
-            // Highlight if searched
-            const isSearched = searchRoom && roomCode.toUpperCase().includes(searchRoom.toUpperCase());
+  const renderRoom = (roomCode: string, className: string = "") => {
+    const roomAssets = getAssetsInRoom(roomCode);
+    const occupied = isRoomOccupied(roomCode);
+    const isSearched = searchRoom && roomCode.toUpperCase().includes(searchRoom.toUpperCase());
 
-            return (
-              <TooltipProvider key={roomCode}>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div
-                      onClick={() => setDetailRoom(roomCode)}
-                      className={`
-                        relative h-24 border-2 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all
-                        ${occupied 
-                          ? 'bg-orange-500 border-orange-600 text-white shadow-md scale-105 z-10' 
-                          : 'bg-white border-slate-200 hover:border-primary/50 text-slate-600'}
-                        ${isSearched ? 'ring-4 ring-primary ring-offset-2' : ''}
-                      `}
-                    >
-                      <span className="text-lg font-bold">{roomCode}</span>
-                      {roomAssets.length > 0 && (
-                        <Badge variant={occupied ? "secondary" : "outline"} className="mt-1 text-[10px] px-1 h-4">
-                          {roomAssets.length} TB
-                        </Badge>
-                      )}
+    return (
+      <TooltipProvider key={roomCode}>
+        <Tooltip>
+          <TooltipTrigger>
+            <div
+              onClick={() => setDetailRoom(roomCode)}
+              className={`
+                relative h-24 border-2 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all
+                ${occupied 
+                  ? 'bg-orange-500 border-orange-600 text-white shadow-md scale-105 z-10' 
+                  : 'bg-white border-slate-200 hover:border-primary/50 text-slate-600'}
+                ${isSearched ? 'ring-4 ring-primary ring-offset-2' : ''}
+                ${className}
+              `}
+            >
+              <span className="text-lg font-bold">{roomCode}</span>
+              {roomAssets.length > 0 && (
+                <Badge variant={occupied ? "secondary" : "outline"} className="mt-1 text-[10px] px-1 h-4">
+                  {roomAssets.length} TB
+                </Badge>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="w-64 p-0" side="top">
+            <div className="p-3 bg-slate-900 text-white rounded-t-md border-b border-slate-700">
+              <div className="font-bold flex items-center justify-between">
+                <span>Phòng {roomCode}</span>
+                <Badge variant="outline" className="text-white border-white/20">
+                  {roomAssets.length} thiết bị
+                </Badge>
+              </div>
+            </div>
+            <div className="p-3 space-y-3 max-h-60 overflow-auto bg-white text-slate-900">
+              {roomAssets.length === 0 ? (
+                <p className="text-sm text-slate-500 italic">Không có thiết bị nào</p>
+              ) : (
+                roomAssets.map(asset => (
+                  <div key={asset.id} className="text-xs border-b pb-2 last:border-0 last:pb-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold flex items-center">
+                        <Package className="h-3 w-3 mr-1 text-primary" />
+                        {asset.name}
+                      </span>
+                      <Badge 
+                        className="text-[9px] h-4"
+                        variant={asset.status === 'in-use' ? 'default' : 'secondary'}
+                      >
+                        {asset.status === 'in-use' ? 'Đang dùng' : 'Sẵn sàng'}
+                      </Badge>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="w-64 p-0" side="top">
-                    <div className="p-3 bg-slate-900 text-white rounded-t-md border-b border-slate-700">
-                      <div className="font-bold flex items-center justify-between">
-                        <span>Phòng {roomCode}</span>
-                        <Badge variant="outline" className="text-white border-white/20">
-                          {roomAssets.length} thiết bị
-                        </Badge>
+                    <div className="text-slate-500 flex items-center">
+                      <Info className="h-3 w-3 mr-1" />
+                      ID: {asset.id}
+                    </div>
+                    {asset.status === 'in-use' && asset.last_user_name && (
+                      <div className="text-orange-600 font-medium flex items-center mt-1">
+                        <User className="h-3 w-3 mr-1" />
+                        Người dùng: {asset.last_user_name}
                       </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  const renderFloor = (floor: number) => {
+    // LAYOUT TẦNG-1 & TẦNG-2 (HÌNH CHỮ L)
+    if (floor === 1 || floor === 2) {
+      return (
+        <Card key={floor} className="overflow-hidden border-primary/10 shadow-sm bg-slate-50/30">
+          <CardHeader className="bg-slate-50 border-b py-3">
+            <CardTitle className="text-lg flex items-center">
+              <MapIcon className="mr-2 h-5 w-5 text-primary" />
+              Sơ đồ Tầng {floor} (Hình chữ L)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-10">
+            <div className="relative mx-auto" style={{ width: '600px', height: '500px' }}>
+              {/* Cánh dọc của chữ L */}
+              <div className="absolute left-0 top-0 w-32 space-y-4">
+                {renderRoom(`P${floor}01`)}
+                {renderRoom(`P${floor}02`)}
+                {renderRoom(`P${floor}03`)}
+              </div>
+              {/* Góc và Cánh ngang của chữ L */}
+              <div className="absolute left-0 bottom-0 flex space-x-4">
+                {renderRoom(`P${floor}04`, "w-32")}
+                {renderRoom(`P${floor}05`, "w-32")}
+                {renderRoom(`P${floor}06`, "w-32")}
+                {renderRoom(`P${floor}07`, "w-32")}
+                {renderRoom(`P${floor}08`, "w-32")}
+              </div>
+              {/* Hành lang trung tâm */}
+              <div className="absolute left-40 top-40 text-slate-300 font-bold text-4xl rotate-45 select-none pointer-events-none opacity-20">
+                SẢNH CHÍNH
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // LAYOUT TẦNG 3 - 6 (PHÒNG ĐỐI DIỆN)
+    if (floor >= 3 && floor <= 6) {
+      return (
+        <Card key={floor} className="overflow-hidden border-primary/10 shadow-sm">
+          <CardHeader className="bg-slate-50 border-b py-3">
+            <CardTitle className="text-lg flex items-center">
+              <MapIcon className="mr-2 h-5 w-5 text-primary" />
+              Sơ đồ Tầng {floor} (Phòng đối diện)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="flex flex-col space-y-12 max-w-2xl mx-auto">
+              {/* Dãy phòng bên trái */}
+              <div className="grid grid-cols-3 gap-6">
+                {renderRoom(`P${floor}01`)}
+                {renderRoom(`P${floor}02`)}
+                {renderRoom(`P${floor}03`)}
+              </div>
+              
+              {/* Hành lang giữa */}
+              <div className="h-16 bg-slate-100 rounded-lg flex items-center justify-center border-y-2 border-dashed border-slate-200">
+                <span className="text-slate-400 font-mono tracking-[1em] text-xs font-bold">HÀNH LANG GIỮA</span>
+              </div>
+
+              {/* Dãy phòng bên phải */}
+              <div className="grid grid-cols-3 gap-6">
+                {renderRoom(`P${floor}04`)}
+                {renderRoom(`P${floor}05`)}
+                {renderRoom(`P${floor}06`)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // LAYOUT TẦNG 12 (HỘI TRƯỜNG)
+    if (floor === 12) {
+      return (
+        <Card key={floor} className="overflow-hidden border-primary/10 shadow-sm">
+          <CardHeader className="bg-slate-50 border-b py-3">
+            <CardTitle className="text-lg flex items-center">
+              <MapIcon className="mr-2 h-5 w-5 text-primary" />
+              Sơ đồ Tầng 12 (Khu vực Hội trường)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-4 gap-6 min-h-[400px]">
+               {/* Các phòng nhỏ bên cạnh */}
+               <div className="col-span-1 space-y-4">
+                  {renderRoom(`P1201`)}
+                  {renderRoom(`P1202`)}
+                  {renderRoom(`P1203`)}
+               </div>
+               {/* HỘI TRƯỜNG LỚN */}
+               <div className="col-span-3">
+                  <div 
+                    onClick={() => setDetailRoom("HOITRUONG")}
+                    className="h-full bg-blue-50 border-4 border-blue-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition-all border-dashed"
+                  >
+                    <div className="bg-white p-6 rounded-full shadow-lg mb-4">
+                      <MapIcon className="h-16 w-16 text-blue-600" />
                     </div>
-                    <div className="p-3 space-y-3 max-h-60 overflow-auto bg-white text-slate-900">
-                      {roomAssets.length === 0 ? (
-                        <p className="text-sm text-slate-500 italic">Không có thiết bị nào</p>
-                      ) : (
-                        roomAssets.map(asset => (
-                          <div key={asset.id} className="text-xs border-b pb-2 last:border-0 last:pb-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-bold flex items-center">
-                                <Package className="h-3 w-3 mr-1 text-primary" />
-                                {asset.name}
-                              </span>
-                              <Badge 
-                                className="text-[9px] h-4"
-                                variant={asset.status === 'in-use' ? 'default' : 'secondary'}
-                              >
-                                {asset.status === 'in-use' ? 'Đang dùng' : 'Sẵn sàng'}
-                              </Badge>
-                            </div>
-                            <div className="text-slate-500 flex items-center">
-                              <Info className="h-3 w-3 mr-1" />
-                              ID: {asset.id}
-                            </div>
-                            {asset.status === 'in-use' && asset.last_user_name && (
-                              <div className="text-orange-600 font-medium flex items-center mt-1">
-                                <User className="h-3 w-3 mr-1" />
-                                Người dùng: {asset.last_user_name}
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
+                    <h3 className="text-3xl font-black text-blue-800 uppercase tracking-tighter">Hội Trường Lớn</h3>
+                    <p className="text-blue-500 font-medium mt-2">Sức chứa: 500 người</p>
+                    <Badge variant="outline" className="mt-4 border-blue-400 text-blue-600">PHÒNG ĐA NĂNG</Badge>
+                  </div>
+               </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // CÁC TẦNG KHÁC (LAYOUT MẶC ĐỊNH)
+    return (
+      <Card key={floor} className="overflow-hidden border-primary/10 shadow-sm">
+        <CardHeader className="bg-slate-50 border-b py-3">
+          <CardTitle className="text-lg flex items-center">
+            <MapIcon className="mr-2 h-5 w-5 text-primary" />
+            Tầng {floor}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-4">
+            {Array.from({ length: roomsPerFloor }).map((_, i) => (
+              renderRoom(`P${floor}${String(i + 1).padStart(2, '0')}`)
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6 pb-10">
@@ -189,7 +312,7 @@ export default function BuildingMap() {
         </div>
       </div>
 
-      <Tabs value={selectedFloor} onValueChange={setSelectedFloor} className="w-full">
+      <Tabs value={selectedFloor} onValueChange={handleFloorChange} className="w-full">
         <div className="overflow-x-auto pb-2">
           <TabsList className="inline-flex w-max min-w-full">
             {floors.sort((a, b) => a - b).map(f => (

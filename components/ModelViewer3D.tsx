@@ -14,19 +14,22 @@ interface ModelViewer3DProps {
 
 export default function ModelViewer3D({ modelUrl }: ModelViewer3DProps) {
   return (
-    <div className="w-full h-[500px] bg-slate-900 rounded-xl overflow-hidden shadow-inner relative">
-      <Canvas shadows camera={{ position: [0, 0, 5], fov: 45 }}>
+    <div className="w-full h-full bg-slate-50 relative overflow-hidden group">
+      <Canvas shadows camera={{ position: [5, 5, 5], fov: 45 }}>
         <Suspense fallback={null}>
-          <Stage environment="city" intensity={0.6} contactShadow={true} shadowBias={-0.0015}>
+          <Stage environment="city" intensity={0.6}>
             <Center>
               <Model url={modelUrl} />
             </Center>
           </Stage>
         </Suspense>
-        <OrbitControls makeDefault autoRotate />
+        <OrbitControls makeDefault />
       </Canvas>
-      <div className="absolute bottom-4 left-4 text-white/50 text-xs font-mono">
-        Dùng chuột để xoay và phóng to mô hình
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600/10 border border-blue-600/20 rounded-full text-[10px] text-blue-600 font-mono tracking-widest uppercase backdrop-blur-sm pointer-events-none">
+        Live Security Feed • Interactive Map View
+      </div>
+      <div className="absolute bottom-4 right-4 text-slate-400 text-[10px] font-mono pointer-events-none">
+        LMB: Rotate • RMB: Pan • Scroll: Zoom
       </div>
     </div>
   );
