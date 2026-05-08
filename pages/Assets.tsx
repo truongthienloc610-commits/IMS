@@ -204,13 +204,13 @@ export default function Assets({ user }: { user: any }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Danh sách thiết bị</h1>
+        <h1 className="text-3xl font-black tracking-tight text-primary uppercase">Danh sách thiết bị</h1>
         
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={exportPDF}>
+          <Button variant="outline" onClick={exportPDF} className="dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 transition-all">
             <Download className="mr-2 h-4 w-4" /> Xuất PDF
           </Button>
-          <Button variant="outline" onClick={exportExcel}>
+          <Button variant="outline" onClick={exportExcel} className="dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 transition-all">
             <Download className="mr-2 h-4 w-4" /> Xuất Excel
           </Button>
           {(user.role === 'admin') && (
@@ -315,41 +315,41 @@ export default function Assets({ user }: { user: any }) {
         </div>
       </div>
 
-      <Card>
+        <Card className="dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all overflow-hidden">
         <CardHeader className="py-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input 
                 placeholder="Tìm kiếm theo mã ID (QA-XXXXXX), tên hoặc vị trí..." 
-                className="pl-8"
+                className="pl-10 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500 focus-visible:ring-primary/30 transition-all h-10"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 transition-all">
                 <SelectValue placeholder="Loại thiết bị" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
                 <SelectItem value="all">Tất cả loại</SelectItem>
                 {uniqueTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterLocation} onValueChange={setFilterLocation}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 transition-all">
                 <SelectValue placeholder="Vị trí/Phòng" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
                 <SelectItem value="all">Tất cả vị trí</SelectItem>
                 {uniqueLocations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 transition-all">
                 <SelectValue placeholder="Trạng thái" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
                 <SelectItem value="all">Tất cả trạng thái</SelectItem>
                 <SelectItem value="ready">Sẵn sàng</SelectItem>
                 <SelectItem value="in-use">Đang sử dụng</SelectItem>
@@ -362,61 +362,65 @@ export default function Assets({ user }: { user: any }) {
         <CardContent className="p-0 sm:p-6">
           <div className="hidden sm:block">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Mã QA</TableHead>
-                  <TableHead>Tên thiết bị</TableHead>
-                  <TableHead>Loại</TableHead>
-                  <TableHead>Vị trí</TableHead>
-                  <TableHead>Ghi chú</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
+              <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                <TableRow className="dark:border-slate-800">
+                  <TableHead className="font-bold dark:text-slate-300">Mã QA</TableHead>
+                  <TableHead className="font-bold dark:text-slate-300">Tên thiết bị</TableHead>
+                  <TableHead className="font-bold dark:text-slate-300">Loại</TableHead>
+                  <TableHead className="font-bold dark:text-slate-300">Vị trí</TableHead>
+                  <TableHead className="font-bold dark:text-slate-300">Ghi chú</TableHead>
+                  <TableHead className="font-bold dark:text-slate-300">Trạng thái</TableHead>
+                  <TableHead className="text-right font-bold dark:text-slate-300">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAssets.map((asset) => (
-                  <TableRow key={asset.id}>
-                    <TableCell className="font-mono font-medium">{asset.id}</TableCell>
-                    <TableCell>{asset.name}</TableCell>
-                    <TableCell>{asset.type}</TableCell>
-                    <TableCell>{asset.location}</TableCell>
-                    <TableCell className="max-w-[150px] truncate" title={asset.notes}>{asset.notes || '-'}</TableCell>
+                  <TableRow key={asset.id} className="dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <TableCell className="font-mono font-bold text-primary/80">{asset.id}</TableCell>
+                    <TableCell className="font-medium dark:text-slate-200">{asset.name}</TableCell>
+                    <TableCell className="dark:text-slate-400">{asset.type}</TableCell>
+                    <TableCell className="dark:text-slate-400">
+                      <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 dark:text-slate-300 border-none font-medium">
+                        {asset.location}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-[150px] truncate dark:text-slate-500" title={asset.notes}>{asset.notes || '-'}</TableCell>
                     <TableCell>
                       <Badge variant={
                         asset.status === 'ready' ? 'default' :
                         asset.status === 'in-use' ? 'secondary' :
                         asset.status === 'broken' ? 'destructive' : 'outline'
-                      }>
+                      } className="font-bold">
                         {asset.status === 'ready' ? 'Sẵn sàng' :
                          asset.status === 'in-use' ? 'Đang sử dụng' :
                          asset.status === 'broken' ? 'Hỏng' : 'Bảo trì'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="icon" onClick={() => openHistory(asset)} title="Lịch sử Check-in/out">
+                      <Button variant="outline" size="icon" onClick={() => openHistory(asset)} title="Lịch sử Check-in/out" className="dark:bg-slate-800 dark:border-slate-700 transition-all">
                         <History className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="icon" onClick={() => setQrAsset(asset)} title="Xuất mã QR">
+                      <Button variant="outline" size="icon" onClick={() => setQrAsset(asset)} title="Xuất mã QR" className="dark:bg-slate-800 dark:border-slate-700 transition-all">
                         <QrCode className="h-4 w-4" />
                       </Button>
                       {(user.role === 'admin' || user.can_repair) && (
                         <>
                           {asset.status !== 'maintenance' && (
-                            <Button variant="outline" size="icon" onClick={() => openMaintenance(asset)} title="Báo bảo trì">
+                            <Button variant="outline" size="icon" onClick={() => openMaintenance(asset)} title="Báo bảo trì" className="dark:bg-slate-800 dark:border-slate-700 transition-all">
                               <Wrench className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button variant="outline" size="icon" onClick={() => openRepair(asset)} title="Gửi sửa chữa" className="text-orange-600">
+                          <Button variant="outline" size="icon" onClick={() => openRepair(asset)} title="Gửi sửa chữa" className="text-orange-600 dark:text-orange-400 dark:bg-slate-800 dark:border-slate-700 transition-all">
                             <Wrench className="h-4 w-4" />
                           </Button>
                         </>
                       )}
                       {user.role === 'admin' && (
                         <>
-                          <Button variant="outline" size="icon" onClick={() => openEdit(asset)} title="Sửa thiết bị">
+                          <Button variant="outline" size="icon" onClick={() => openEdit(asset)} title="Sửa thiết bị" className="dark:bg-slate-800 dark:border-slate-700 transition-all">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700" onClick={() => setDeleteAssetId(asset.id)} title="Xóa thiết bị">
+                          <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={() => setDeleteAssetId(asset.id)} title="Xóa thiết bị">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
@@ -459,7 +463,7 @@ export default function Assets({ user }: { user: any }) {
                 </div>
 
                 {asset.notes && (
-                  <div className="text-sm bg-gray-50 p-2 rounded border italic">
+                  <div className="text-sm bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-100 dark:border-slate-700 italic text-slate-500 dark:text-slate-400">
                     {asset.notes}
                   </div>
                 )}
