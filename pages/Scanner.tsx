@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { Camera, Search, RefreshCw, History, ArrowRight } from 'lucide-react';
+import { Camera, Search, RefreshCw, History, ArrowRight, AlertTriangle, Check } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function Scanner({ user }: { user: any }) {
@@ -43,9 +43,15 @@ export default function Scanner({ user }: { user: any }) {
         false
       );
       
+      if (!window.isSecureContext && window.location.hostname !== 'localhost') {
+        setCameraError('Tính năng quét QR yêu cầu kết nối bảo mật (HTTPS). Vui lòng truy cập trang web qua HTTPS.');
+        setIsScanning(false);
+        return;
+      }
+
       scanner.render((text) => {
         setScannedCode(text);
-        scanner.clear();
+        scanner.clear().catch(e => console.error('Error clearing scanner:', e));
         setIsScanning(false);
         fetchAsset(text);
       }, (err) => {
@@ -53,10 +59,16 @@ export default function Scanner({ user }: { user: any }) {
         if (err && typeof err === 'string' && err.includes('NotFoundException')) {
           return;
         }
-        // If it's a permission error or something similar
-        if (err && typeof err === 'string' && (err.includes('NotAllowedError') || err.includes('Permission denied'))) {
-          setCameraError('Không có quyền truy cập camera. Vui lòng kiểm tra cài đặt trình duyệt.');
-          setIsScanning(false);
+        
+        // Handle specific camera access errors
+        if (err && typeof err === 'string') {
+          if (err.includes('NotAllowedError') || err.includes('Permission denied')) {
+            setCameraError('Bạn đã từ chối quyền truy cập camera. Vui lòng cấp quyền trong cài đặt trình duyệt và tải lại trang.');
+            setIsScanning(false);
+          } else if (err.includes('NotFoundError') || err.includes('no device found')) {
+            setCameraError('Không tìm thấy camera trên thiết bị của bạn.');
+            setIsScanning(false);
+          }
         }
       });
 
