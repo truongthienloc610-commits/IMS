@@ -20,7 +20,7 @@ async function startServer() {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     
-    const { data: user, error } = await supabase
+    const { data: user } = await supabase
       .from('users')
       .select('role, can_manage_users')
       .eq('id', userId)
@@ -34,20 +34,28 @@ async function startServer() {
   };
 
   // --- API Routes ---
-  
+  app.get('/api/ping', (_req, res) => {
+    res.json({ message: 'pong' });
+  });
+
   // Auth
   app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
+    const cleanEmail = email?.toLowerCase().trim();
     
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email)
+      .eq('email', cleanEmail)
       .eq('password', password)
       .single();
 
     if (error || !user) {
-      const { data: exists } = await supabase.from('users').select('id').eq('email', email).single();
+      if (error && error.code !== 'PGRST116') {
+        return res.status(500).json({ error: `Lỗi hệ thống: ${error.message}` });
+      }
+      
+      const { data: exists } = await supabase.from('users').select('id').eq('email', cleanEmail).single();
       if (!exists) return res.status(401).json({ error: 'Tài khoản không tồn tại trong hệ thống' });
       return res.status(401).json({ error: 'Mật khẩu không chính xác' });
     }
@@ -75,7 +83,8 @@ async function startServer() {
   app.post('/api/auth/register', async (req, res) => {
     const { email, password, name, role, staff_code } = req.body;
     
-    if (!email.toLowerCase().endsWith('@fpt.edu.vn')) {
+    const cleanEmail = email?.toLowerCase().trim();
+    if (!cleanEmail.endsWith('@fpt.edu.vn')) {
       return res.status(400).json({ error: 'Email phải có đuôi @fpt.edu.vn' });
     }
 
@@ -85,7 +94,7 @@ async function startServer() {
     }
 
     const { error } = await supabase.from('users').insert({
-      email, 
+      email: cleanEmail, 
       password, 
       name, 
       role: role || 'staff', 
@@ -105,11 +114,7 @@ async function startServer() {
   });
 
   // Assets
-  app.get('/api/assets', async (req, res) => {
-    // In Supabase, we can't easily do subqueries in select without complex joins or RPC.
-    // For simplicity, we'll fetch assets and then we might need to fetch logs or use a view.
-    // Let's assume the user creates a view or we do it in code.
-    // For now, let's just get the assets.
+  app.get('/api/assets', async (_req, res) => {
     const { data: assets, error } = await supabase
       .from('assets')
       .select(`
@@ -123,8 +128,7 @@ async function startServer() {
 
     if (error) return res.status(400).json({ error: error.message });
 
-    // Transform to match the old SQLite format if needed
-    const transformed = assets.map((a: any) => {
+    const transformed = (assets || []).map((a: any) => {
       const lastLog = a.usage_logs && a.usage_logs.length > 0 ? a.usage_logs[a.usage_logs.length - 1] : null;
       return {
         ...a,
@@ -155,7 +159,7 @@ async function startServer() {
     
     if (error) return res.status(400).json({ error: error.message });
     
-    const transformed = history.map((h: any) => ({
+    const transformed = (history || []).map((h: any) => ({
       ...h,
       user_name: h.users?.name
     }));
@@ -214,7 +218,7 @@ async function startServer() {
   });
 
   // Users
-  app.get('/api/users', isAdmin, async (req, res) => {
+  app.get('/api/users', isAdmin, async (_req, res) => {
     const { data: users, error } = await supabase
       .from('users')
       .select('id, email, name, role, staff_code, is_locked, is_approved, can_borrow, can_repair, can_manage_users, created_at');
@@ -250,7 +254,7 @@ async function startServer() {
   });
 
   // Usage Logs
-  app.get('/api/logs', async (req, res) => {
+  app.get('/api/logs', async (_req, res) => {
     const { data: logs, error } = await supabase
       .from('usage_logs')
       .select('*, assets(name, type), users(name)')
@@ -258,7 +262,7 @@ async function startServer() {
     
     if (error) return res.status(400).json({ error: error.message });
     
-    const transformed = logs.map((l: any) => ({
+    const transformed = (logs || []).map((l: any) => ({
       ...l,
       asset_name: l.assets?.name,
       asset_type: l.assets?.type,
@@ -284,26 +288,7 @@ async function startServer() {
     if (!asset) return res.status(404).json({ error: 'Asset not found' });
 
     if (action === 'checkout') {
-      const { data: currentBorrow } = await supabase
-        .from('assets')
-        .select('name')
-        .eq('status', 'in-use')
-        .eq('id', asset_id) // Wait, this logic is slightly different from SQLite one.
-        // Original logic: check if USER is already borrowing something else.
-      
-      const { data: userBorrow } = await supabase
-        .from('usage_logs')
-        .select('asset_id, assets(name)')
-        .eq('user_id', user_id)
-        .eq('action', 'checkout')
-        .order('timestamp', { ascending: false })
-        .limit(1)
-        .single();
-      
-      // We'd need to verify if the asset is still in-use by this user.
-      // For simplicity, let's just stick to the original logic:
       if (asset.status !== 'ready') return res.status(400).json({ error: `Thiết bị này đang được sử dụng. Không thể mượn.` });
-      
       await supabase.from('assets').update({ status: 'in-use' }).eq('id', asset_id);
     } else if (action === 'checkin') {
       if (asset.status !== 'in-use') return res.status(400).json({ error: 'Thiết bị này hiện không được sử dụng.' });
@@ -327,7 +312,7 @@ async function startServer() {
   });
 
   // Repairs
-  app.get('/api/repairs', async (req, res) => {
+  app.get('/api/repairs', async (_req, res) => {
     const { data: repairs, error } = await supabase
       .from('repairs')
       .select('*, assets(name), users(name)')
@@ -335,7 +320,7 @@ async function startServer() {
     
     if (error) return res.status(400).json({ error: error.message });
     
-    const transformed = repairs.map((r: any) => ({
+    const transformed = (repairs || []).map((r: any) => ({
       ...r,
       asset_name: r.assets?.name,
       user_name: r.users?.name
@@ -353,7 +338,7 @@ async function startServer() {
   });
 
   // Stats
-  app.get('/api/stats', async (req, res) => {
+  app.get('/api/stats', async (_req, res) => {
     const { data: assets } = await supabase.from('assets').select('status');
     const stats = {
       total: assets?.length || 0,
@@ -379,36 +364,16 @@ async function startServer() {
     res.json({ ...stats, recentLogs: transformedLogs });
   });
 
-  // --- Vite Middleware ---
-  if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    // Do not handle catch-all '*' here if running as a Vercel API function
-    if (!process.env.VERCEL) {
-      app.get('*', (req, res) => {
-        res.sendFile(path.join(distPath, 'index.html'));
-      });
-    }
-  }
+  // --- Vite Middleware (local dev only) ---
+  const vite = await createViteServer({
+    server: { middlewareMode: true },
+    appType: 'spa',
+  });
+  app.use(vite.middlewares);
 
-  if (!process.env.VERCEL) {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  }
-
-  return app;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 }
 
-export const appPromise = startServer();
-// For Vercel, we need to export the app directly
-export default async (req: any, res: any) => {
-  const app = await appPromise;
-  return app(req, res);
-};
+startServer();
